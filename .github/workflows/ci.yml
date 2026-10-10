@@ -1,0 +1,35 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install build deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libssl-dev zlib1g-dev \
+            libgmp-dev libpcap-dev pkg-config yasm libbz2-dev
+      - name: configure
+        working-directory: src
+        run: sh ./configure
+      - name: build
+        working-directory: src
+        run: |
+          mkdir -p ../run
+          make -sj$(nproc)
+      - name: install binary next to configs
+        run: cp run/john* rules/
+      - name: smoke test
+        working-directory: rules
+        run: |
+          ./john --list=formats | grep -qi raw-md5
+          echo '5d41402abc4b2a76b9719d911017c592' > /tmp/t.hash
+          printf 'hello\n' > /tmp/words
+          ./john --format=raw-md5 --wordlist=/tmp/words /tmp/t.hash
+          ./john --show --format=raw-md5 /tmp/t.hash | grep -q hello

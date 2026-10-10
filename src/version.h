@@ -1,0 +1,1 @@
+#define JTR_GIT_VERSION JUMBO_VERSION "-$"
